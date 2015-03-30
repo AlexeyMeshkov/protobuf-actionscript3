@@ -15,7 +15,7 @@
 // limitations under the License.
 
 package com.google.protobuf
-{	
+{
 	import com.hurlant.math.BigInteger;
 	
 	import flash.utils.ByteArray;
@@ -43,12 +43,12 @@ package com.google.protobuf
 	   * may legally end wherever a tag occurs, and zero is not a valid tag number.
 	   */
 	  public function readTag():int {
-	  	
+	
 	  	if ( input.bytesAvailable != 0)
 		    lastTag = readRawVarint32();
-		else 
+		else
 			lastTag = 0;
-	    
+	
 	    return lastTag;
 	  }
 	
@@ -92,7 +92,7 @@ package com.google.protobuf
 	      case WireFormat.WIRETYPE_END_GROUP:
 	        return false;
 	      case WireFormat.WIRETYPE_FIXED32:
-	        readRawLittleEndian32();
+	        readRawLittleEndianInt32();
 	        return true;
 	      default:
 	        throw InvalidProtocolBufferException.invalidWireType();
@@ -113,48 +113,17 @@ package com.google.protobuf
 	  // -----------------------------------------------------------------
 	
 	  /** Read a {@code double} field value from the stream. */
-	  public function readDouble():BigInteger {
-	    //return readRawLittleEndian64();
-	  	
-	    var b1:int = readRawByte();
-	    var b2:int = readRawByte();
-	    var b3:int = readRawByte();
-	    var b4:int = readRawByte();
-	    var b5:int = readRawByte();
-	    var b6:int = readRawByte();
-	    var b7:int = readRawByte();
-	    var b8:int = readRawByte();
-
-	  	var ba:ByteArray = new ByteArray();
-        ba.writeByte(b8);
-        ba.writeByte(b7);
-        ba.writeByte(b6);
-        ba.writeByte(b5);
-        ba.writeByte(b4);
-        ba.writeByte(b3);
-        ba.writeByte(b2);
-        ba.writeByte(b1);
-        ba.position = 0;
-      
-      	return ba.readDouble();
+	  public function readDouble():Number {
+	    var bytes : ByteArray = readRawLittleEndian64();
+	    var r : Number = bytes.readDouble();
+	    return r;
 	  }
 	
 	  /** Read a {@code float} field value from the stream. */
 	  public function readFloat():Number {
-	  	
-	    var b1:int = readRawByte();
-	    var b2:int = readRawByte();
-	    var b3:int = readRawByte();
-	    var b4:int = readRawByte();
-
-	  	var ba:ByteArray = new ByteArray();
-        ba.writeByte(b4);
-        ba.writeByte(b3);
-        ba.writeByte(b2);
-        ba.writeByte(b1);
-        ba.position = 0;
-      
-      	return ba.readFloat();
+        var bytes : ByteArray = readRawLittleEndian32();
+        var r : Number = bytes.readFloat();
+        return r;
 	  }
 	
 	  /** Read a {@code uint64} field value from the stream. */
@@ -174,12 +143,12 @@ package com.google.protobuf
 	
 	  /** Read a {@code fixed64} field value from the stream. */
 	  public function readFixed64():BigInteger {
-	    return readRawLittleEndian64();
+	    return new BigInteger( readRawLittleEndian64() );
 	  }
 	
 	  /** Read a {@code fixed32} field value from the stream. */
 	  public function readFixed32():int {
-	    return readRawLittleEndian32();
+	    return readRawLittleEndianInt32();
 	  }
 	
 	  /** Read a {@code bool} field value from the stream. */
@@ -188,7 +157,7 @@ package com.google.protobuf
 	  }
 	
 	  /** Read a {@code string} field value from the stream. */
-	  public function readString():String 
+	  public function readString():String
 	  {
 	    var size:int = readRawVarint32();
 	    return new String(readRawBytes(size));
@@ -242,12 +211,12 @@ package com.google.protobuf
 	
 	  /** Read an {@code sfixed32} field value from the stream. */
 	  public function readSFixed32():int{
-	    return readRawLittleEndian32();
+	    return readRawLittleEndianInt32();
 	  }
 	
 	  /** Read an {@code sfixed64} field value from the stream. */
 	  public function readSFixed64():BigInteger {
-	    return readRawLittleEndian64();
+	    return new BigInteger( readRawLittleEndian64() );
 	  }
 	
 	  /** Read an {@code sint32} field value from the stream. */
@@ -259,10 +228,10 @@ package com.google.protobuf
 	  public function readSInt64():BigInteger {
 	    return decodeZigZag64(readRawVarint64());
 	  }
-	  
+	
 	 /**
-	   * Read a field of a given wire type.  
-	   * 
+	   * Read a field of a given wire type.
+	   *
 	   * @param type Declared type of the field.
 	   * @return An object representing the field's value, of the exact
 	   *         type which would be returned by
@@ -270,7 +239,7 @@ package com.google.protobuf
 	   *         this field.
 	   */
 	  public function  readPrimitiveField(type:int):Object {
-	  	
+	
 	    switch (type) {
 	      case Descriptor.DOUBLE  : return readDouble  ();
 	      case Descriptor.FLOAT   : return readFloat   ();
@@ -290,8 +259,8 @@ package com.google.protobuf
 	      //fix bug 1 protobuf-actionscript3
 		  case Descriptor.ENUM    : return readEnum    ();
 	
-		  default: 
-		  	trace("Unknown primative field type: " + type); 
+		  default:
+		  	trace("Unknown primative field type: " + type);
 		  	break;
 	    }
 	
@@ -340,10 +309,12 @@ package com.google.protobuf
 	  public function readRawVarint64():BigInteger {
 	    var shift:int = 0;
 	    var result:BigInteger = BigInteger.ZERO.clone();
+		  var b : int;
+		  var ba : ByteArray = new ByteArray();
 	    while (shift < 64) {
 	      //read a byte a create a BigInteger with it
-	      var b:int = readRawByte();
-		  var ba:ByteArray = new ByteArray();
+		  b = readRawByte();
+	    ba.clear();
 		  ba.writeByte(b & 0x7F);
 		  ba.position=0;
 		  var bb:BigInteger = new BigInteger(ba);
@@ -358,7 +329,7 @@ package com.google.protobuf
 	  }
 	
 	  /** Read a 32-bit little-endian integer from the stream. */
-	  public function readRawLittleEndian32():int {
+	  public function readRawLittleEndianInt32():int {
 	    var b1:int = readRawByte();
 	    var b2:int = readRawByte();
 	    var b3:int = readRawByte();
@@ -369,11 +340,27 @@ package com.google.protobuf
 	           ((b4 & 0xff) << 24);
 	  }
 	
-	  /** Read a 64-bit little-endian integer from the stream. */
-	  public function readRawLittleEndian64():BigInteger {
+	  /** Read a 32-bit little-endian byte array from the stream. */
+	  public function readRawLittleEndian32():ByteArray {
+      var b1:int = readRawByte();
+	    var b2:int = readRawByte();
+	    var b3:int = readRawByte();
+	    var b4:int = readRawByte();
+	
+	  	var ba:ByteArray = new ByteArray();
+	  	ba.writeByte(b4);
+	  	ba.writeByte(b3);
+	  	ba.writeByte(b2);
+	  	ba.writeByte(b1);
+	  	ba.position = 0;
+	  	return ba;
+	  }
+
+	  /** Read a 64-bit little-endian byte array from the stream. */
+	  public function readRawLittleEndian64():ByteArray {
 	  	//tricky: BigInteger takes an array with heaviest byte first!
 	  	//reverse from the stream
-	  	
+	
 		var b1:int = readRawByte();
 	    var b2:int = readRawByte();
 	    var b3:int = readRawByte();
@@ -382,7 +369,7 @@ package com.google.protobuf
 	    var b6:int = readRawByte();
 	    var b7:int = readRawByte();
 	    var b8:int = readRawByte();
-	  	
+	
 	  	var ba:ByteArray = new ByteArray();
 	  	ba.writeByte(b8);
 	  	ba.writeByte(b7);
@@ -393,7 +380,7 @@ package com.google.protobuf
 	  	ba.writeByte(b2);
 	  	ba.writeByte(b1);
 	  	ba.position = 0;
-	  	return new BigInteger(ba);
+	  	return ba;
 	  }
 	
 	  /**
@@ -455,7 +442,7 @@ package com.google.protobuf
 	  public function readRawByte():int {
 	  	//lame, wait until buffer is full enough
 	  	//while(bytesAvailable() == 0) {}
-	  	
+	
 	    return input.readByte();
 	  }
 	
@@ -469,15 +456,15 @@ package com.google.protobuf
 	    if (size < 0) {
 	      throw InvalidProtocolBufferException.negativeSize();
 	    }
-	    
+	
 	    //lame, wait until buffer is full enough
-		//while (bytesAvailable() < size) {}			
-	    
+		//while (bytesAvailable() < size) {}
+	
 	    var bytes:ByteArray = new ByteArray();
-	    
+	
 	    if(size != 0)
 	      input.readBytes(bytes,0,size);
-	    
+	
 	    return bytes;
 	  }
 	
@@ -487,7 +474,7 @@ package com.google.protobuf
 	   * @throws InvalidProtocolBufferException The end of the stream or the current
 	   *                                        limit was reached.
 	   */
-	  public function skipRawBytes(size:int):void 
+	  public function skipRawBytes(size:int):void
 	  {
 		readRawBytes(size);
 	  }

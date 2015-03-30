@@ -1,8 +1,5 @@
 package com.google.protobuf
 {
-	import flash.utils.getDefinitionByName;
-	
-	
 	/**
 	 * A limited set of the original java implementation. To Be Completed
 	 * 
@@ -32,8 +29,8 @@ package com.google.protobuf
 				var fieldName:String = morphGPBNameToMessageName(matchedMessage[1]);
 				//trace("message: "+matchedMessage[1]+" ,fieldName: "+fieldName+" ,value: "+matchedMessage[3]);
 				var descriptor:Descriptor = gpbMessage.getDescriptor(fieldName);
-				var classRef:Class = getDefinitionByName(descriptor.messageClass) as Class;
-				var embeddedMessage:Message = new classRef() as Message;
+				var embeddedMessage : Message = Message.CreateMessageByClassName( descriptor.messageClass );
+
 				merge(embeddedMessage,matchedMessage[3]);
 				(gpbMessage[fieldName] as Array).push(embeddedMessage);
 			}

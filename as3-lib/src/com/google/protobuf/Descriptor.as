@@ -61,24 +61,24 @@ package com.google.protobuf
                                 							// indexed by Label.
  	
 	 	public var fieldName:String;
- 		public var label:int;
  		public var fieldNumber:int;
  		public var type:int;
  		public var messageClass:String;
+ 		internal var isOptional : Boolean;
+ 		internal var isRequired : Boolean;
+ 		internal var isRepeated : Boolean;
+ 		internal var isMessage : Boolean;
  		
  		public function Descriptor(name:String, messageClass:String, type:int, label:int, fieldNumber:int) {
 			this.fieldName = name;
 			this.messageClass = messageClass;
 			this.type = type;
- 			this.label = label;
  			this.fieldNumber = fieldNumber;
+ 			isOptional = ( label == LABEL_OPTIONAL );
+ 			isRequired = ( label == LABEL_REQUIRED );
+ 			isRepeated = ( label == LABEL_REPEATED );
+ 			isMessage = ( type == MESSAGE );
  		}
- 		
- 		public function isOptional():Boolean { return label == LABEL_OPTIONAL; }
- 		public function isRequired():Boolean { return label == LABEL_REQUIRED; }
- 		public function isRepeated():Boolean { return label == LABEL_REPEATED; }
- 		public function isMessage():Boolean  { return type == MESSAGE; }
- 		
  	}
  	
  	

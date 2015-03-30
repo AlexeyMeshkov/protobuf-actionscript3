@@ -16,6 +16,8 @@
 
 package com.google.protobuf
 {
+	import com.hurlant.math.BigInteger;
+	
 	import flash.utils.ByteArray;
 	import flash.utils.IDataOutput;
 	
@@ -55,15 +57,13 @@ package com.google.protobuf
 	  /** Write a {@code double} field, including tag, to the stream. */
 	  public function writeDouble(fieldNumber:int, value:BigInteger):void {
 	    writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED64);
-	    writeRawDouble(value);
-	    //writeRawLittleEndian64(value);
+	    writeRawLittleEndian64(value);
 	  }
 	
 	  /** Write a {@code float} field, including tag, to the stream. */
 	  public function writeFloat(fieldNumber:int, value:Number):void {
 	    writeTag(fieldNumber, WireFormat.WIRETYPE_FIXED32);
-	    writeRawFloat(value);
-	    //writeRawLittleEndian32(value);
+	    writeRawLittleEndian32(value);
 	  }
 	
 	  /** Write a {@code uint64} field, including tag, to the stream. */
@@ -85,7 +85,7 @@ package com.google.protobuf
 	    /*
 	    if (value >= 0) {
 	      writeRawVarint32(value);
-	    } 
+	    }
 	    else {
 	      // Must sign-extend.
 	      writeRawVarint64(value);
@@ -147,7 +147,7 @@ package com.google.protobuf
 	    writeRawVarint32(tempStream.length);
 	    output.writeBytes(tempStream,0,tempStream.length);
 	  }
-	  
+	
 	
 	  /** Write a {@code bytes} field, including tag, to the stream. */
 	  public function writeBytes(fieldNumber:int, value:ByteArray):void {
@@ -219,7 +219,7 @@ package com.google.protobuf
 	    writeBytes(WireFormat.MESSAGE_SET_MESSAGE, value);
 	    writeTag(WireFormat.MESSAGE_SET_ITEM, WireFormat.WIRETYPE_END_GROUP);
 	  }*/
-	   
+	
 	 /**
 	   * Write a field of arbitrary type, including tag, to the stream.
 	   *
@@ -230,64 +230,96 @@ package com.google.protobuf
 	   *               {@link Message#getField(Descriptors.FieldDescriptor)} for
 	   *               this field.
 	   */
-	  public function writeField(number:int, value:*,type:int=0):void {
-	    
-	    if (value is String)
-	    	writeString(number, (value as String));
-	    else if (value is Boolean) 
-	    	writeBool(number, (value as Boolean));
-	    else if (value is uint) 
-	    	writeUInt32(number, (value as uint));
-	    else if (value is int)
-	     	writeInt32(number, (value as int));
-	    else if (value is BigInteger)
-	    	writeInt64(number, (value as BigInteger));
-	    else if (value is ByteArray)
-	    	writeBytes(number, (value as ByteArray));
-	    else if ((value is Number)&&(type==Descriptor.FLOAT))
-	    	writeFloat(number,value);
-	    else if ((value is Number)&&(type==Descriptor.DOUBLE))
-	    	writeDouble(number,value);
-	    else
-	    	throw  new InvalidProtocolBufferException( "Tried to write primative field type, but type was not valid");
-	    	
+	  public function writeField( number:int, value:*, desc:Descriptor):void {
+      switch ( desc.type ) {
+        case Descriptor.DOUBLE:
+          writeDouble( number, (value as BigInteger ) );
+          break;
+        case Descriptor.FLOAT:
+          writeFloat( number, (value as Number ) );
+          break;
+        case Descriptor.INT64:
+          writeInt64( number, (value as BigInteger) );
+          break;
+        case Descriptor.UINT64:
+          writeUInt64( number, (value as BigInteger) );
+          break;
+        case Descriptor.ENUM:
+          writeEnum( number, (value as int) );
+          break;
+        case Descriptor.INT32:
+          writeInt32( number, (value as int) );
+          break;
+        case Descriptor.FIXED64:
+          writeFixed64( number, (value as BigInteger) );
+          break;
+        case Descriptor.FIXED32:
+          writeFixed32( number, (value as int) );
+          break;
+        case Descriptor.BOOL:
+          writeBool( number, (value as Boolean) );
+          break;
+        case Descriptor.STRING:
+          writeString( number, (value as String) );
+          break;
+        case Descriptor.BYTES:
+          writeBytes( number, (value as ByteArray ) );
+          break;
+        case Descriptor.UINT32:
+          writeUInt32( number, (value as uint) );
+          break;
+        case Descriptor.SFIXED32:
+          writeSFixed32( number, (value as int) );
+          break;
+        case Descriptor.SFIXED64:
+          writeSFixed64( number, (value as BigInteger ) );
+          break;
+        case Descriptor.SINT32:
+          writeSInt32( number, (value as int) );
+          break;
+        case Descriptor.SINT64:
+          writeSInt64( number, (value as BigInteger) );
+          break;
+        default:
+          throw  new InvalidProtocolBufferException( "Tried to write primative field type, but type was not valid");
+      }
 	  }
-	  
+	
 	  public static function computeFieldSize(number:int, value:*):int {
-	    
+	
 	    if (value is String)
 	    	return computeStringSize(number, (value as String));
-	    else if (value is Boolean) 
+	    else if (value is Boolean)
 	    	return computeBoolSize(number, (value as Boolean));
-	    else if (value is uint) 
+	    else if (value is uint)
 	    	return computeUInt32Size(number, (value as uint));
 	    else if (value is int)
 	     	return computeInt32Size(number, (value as int));
 	    else if (value is Number)
 	    	return computeInt64Size(number, (value as BigInteger));
 	    else if ( value is Message )
-		    return value.getSerializedSize();	
+		    return value.getSerializedSize();
 	    else
 	    	throw  new InvalidProtocolBufferException( "Could not compute size of field, type was not valid");
 	  }
       /*
       case DOUBLE  : writeDouble
-      case FLOAT   : writeFloat   
-      case INT64   : writeInt64   
-      case UINT64  : writeUInt64  
-      case INT32   : writeInt32   
-      case FIXED64 : writeFixed64 
+      case FLOAT   : writeFloat
+      case INT64   : writeInt64
+      case UINT64  : writeUInt64
+      case INT32   : writeInt32
+      case FIXED64 : writeFixed64
       case FIXED32 : writeFixed32
-      case BOOL    : writeBool   
-      case STRING  : writeString  
-      case GROUP   : writeGroup   
-      case MESSAGE : writeMessage 
-      case BYTES   : writeBytes   
-      case UINT32  : writeUInt32  
+      case BOOL    : writeBool
+      case STRING  : writeString
+      case GROUP   : writeGroup
+      case MESSAGE : writeMessage
+      case BYTES   : writeBytes
+      case UINT32  : writeUInt32
       case SFIXED32: writeSFixed32(
       case SFIXED64: writeSFixed64
-      case SINT32  : writeSInt32  
-      case SINT64  : writeSInt64  
+      case SINT32  : writeSInt32
+      case SINT64  : writeSInt64
       */
 
 	
@@ -407,7 +439,7 @@ package com.google.protobuf
 	   */
 	  public static function computeBytesSize(fieldNumber:int, value:ByteArray):int {
 	  	var len:int = value.length;
-	  	
+	
 	    return computeTagSize(fieldNumber) +
 	           computeRawVarint32Size(len) + len;
 	  }
@@ -561,7 +593,7 @@ package com.google.protobuf
 	  	ba.writeByte(0x80);
 	  	ba.position = 0;
 	  	var ff:BigInteger = new BigInteger(ba);
-	  	
+	
 	    while (true) {
 	      var b:int = value.byteValue();
 	      if(value.and(ff).equals(BigInteger.ZERO)) {
@@ -606,24 +638,41 @@ package com.google.protobuf
 	    writeRawByte((value >> 16) & 0xFF);
 	    writeRawByte((value >> 24) & 0xFF);
 	  }
-	
+
 	  public static var LITTLE_ENDIAN_32_SIZE:int = 4;
-	
+
 	  /** Write a little-endian 64-bit integer. */
 	  public function writeRawLittleEndian64(value:BigInteger):void {
 	  	//tricky: BigInteger takes an array with heaviest byte first!
 	  	//reverse from the stream
 
 	  	var bytes:ByteArray = value.toByteArray();
-	  	var b8:int = bytes.readByte();
-	  	var b7:int = bytes.readByte();
-	  	var b6:int = bytes.readByte();
-	  	var b5:int = bytes.readByte();
-	  	var b4:int = bytes.readByte();
-	  	var b3:int = bytes.readByte();
-	  	var b2:int = bytes.readByte();
-	  	var b1:int = bytes.readByte();
-	  	
+      var sx : int = bytes.bytesAvailable
+	  	var b8:int = 0;
+      if ( sx >= 8 )
+        b8 = bytes.readByte();
+	  	var b7:int = 0;
+      if ( sx >= 7 )
+        b7 = bytes.readByte();
+	  	var b6:int = 0;
+      if ( sx >= 6 )
+        b6 = bytes.readByte();
+	  	var b5:int = 0;
+      if ( sx >= 5 )
+        b5 = bytes.readByte();
+	  	var b4:int = 0;
+      if ( sx >= 4 )
+        b4 = bytes.readByte();
+	  	var b3:int = 0;
+      if ( sx >= 3 )
+        b3 = bytes.readByte();
+	  	var b2:int = 0;
+      if ( sx >= 2 )
+        b2 = bytes.readByte();
+	  	var b1:int = 0;
+      if ( sx >= 1 )
+        b1 = bytes.readByte();
+
 	  	writeRawByte(b1);
 	  	writeRawByte(b2);
 	  	writeRawByte(b3);
@@ -633,44 +682,8 @@ package com.google.protobuf
 	  	writeRawByte(b7);
 	  	writeRawByte(b8);
 	  }
-	  
+	
 	  public static const LITTLE_ENDIAN_64_SIZE:int = 8;
-	
-	  public function writeRawFloat(value:Number):void {
-	  	var bytes:ByteArray = new ByteArray();
-	  	bytes.writeFloat(value);
-	  	var b4:int = bytes.readByte();
-	  	var b3:int = bytes.readByte();
-	  	var b2:int = bytes.readByte();
-	  	var b1:int = bytes.readByte();
-	  	
-	  	writeRawByte(b1);
-	  	writeRawByte(b2);
-	  	writeRawByte(b3);
-	  	writeRawByte(b4);
-	  }
-	
-	  public function writeRawDouble(value:Number):void {
-	  	var bytes:ByteArray = new ByteArray();
-	  	bytes.writeDouble(value);
-	  	var b8:int = bytes.readByte();
-	  	var b7:int = bytes.readByte();
-	  	var b6:int = bytes.readByte();
-	  	var b5:int = bytes.readByte();
-	  	var b4:int = bytes.readByte();
-	  	var b3:int = bytes.readByte();
-	  	var b2:int = bytes.readByte();
-	  	var b1:int = bytes.readByte();
-	  	
-	  	writeRawByte(b1);
-	  	writeRawByte(b2);
-	  	writeRawByte(b3);
-	  	writeRawByte(b4);
-	  	writeRawByte(b5);
-	  	writeRawByte(b6);
-	  	writeRawByte(b7);
-	  	writeRawByte(b8);
-	  }
 	
 	  /**
 	   * Encode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers

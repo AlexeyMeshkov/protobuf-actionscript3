@@ -364,14 +364,14 @@ GenerateMessageSerializationMethods(io::Printer* printer) {
        ExtensionRangeOrdering());
 
   printer->Print(
-    "public function writeTo(output:com.google.protobuf.CodedOutputStream) : void\n"
+    "public void writeTo(com.google.protobuf.CodedOutputStream output)\n"
     "{\n");
   printer->Indent();
 
   if (descriptor_->extension_range_count() > 0) {
     printer->Print(
-      "com.google.protobuf.GeneratedMessage.ExtendableMessage"
-      ".ExtensionWriter extensionWriter = new ExtensionWriter();\n");
+      "com.google.protobuf.GeneratedMessage.ExtendableMessage\n"
+      "  .ExtensionWriter extensionWriter = newExtensionWriter();\n");
   }
 
   // Merge the fields and the extension ranges, both sorted by field number.
@@ -735,7 +735,7 @@ void MessageGenerator::GenerateIsInitialized(io::Printer* printer) {
           break;
         case FieldDescriptor::LABEL_REPEATED:
           printer->Print(
-            "for (var element:$type$ in get$name$List()) {\n"
+            "for ($type$ element : get$name$List()) {\n"
             "  if (!element.isInitialized()) return false;\n"
             "}\n",
             "type", ClassName(field->message_type()),
